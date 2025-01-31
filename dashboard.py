@@ -33,7 +33,7 @@ def main():
     release_tags = ["Release_1_Tag", "Release_2_Tag"]  # Replace with your actual release tags
 
     # Fetch the token from environment variables
-    token = st.secrets["GITHUB_TOKEN"]
+    token = st.secrets["GITHUB_TOKEN"] or os.getenv("GITHUB_TOKEN")
 
     # Check if the token is present
     if not token:
