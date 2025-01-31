@@ -11,17 +11,48 @@ from sklearn.metrics import root_mean_squared_error, mean_absolute_percentage_er
 from sklearn.preprocessing import StandardScaler
 import plotly.graph_objects as go
 import dill
-
+import os
+import zipfile
+import requests
 import streamlit as st
 
 
 def main():
-     # Page configuration
+    # Page configuration
     st.set_page_config(
         page_title="Machine Unlearning with SISA",
         layout="centered",
         initial_sidebar_state="collapsed",
     )
+
+    # Github repo details
+    owner = "WALKCART"
+    repo = "Machine-Unlearning-Implementation"
+
+    # Release tags
+    release_tags = ["Release_1_Tag", "Release_2_Tag"]  # Replace with your actual release tags
+
+    # Fetch the token from environment variables
+    token = os.getenv("GITHUB_TOKEN")
+
+    # Check if the token is present
+    if not token:
+        raise ValueError("GitHub token not found. Make sure it's set in your environment variables.")
+
+    # Authentication header
+    headers = {
+        "Authorization": f"token {token}",
+        "User-Agent": "python-requests"
+    }
+
+    # Folder where the files will be saved
+    download_dir = 'Data_and_Files'
+
+    # Create the directory if it doesn't exist
+    os.makedirs(download_dir, exist_ok=True)
+
+    download_assets(download_dir, ['Files', 'training_slices'], owner, headers, repo) # download the assets
+
     # loading the data from the different files
     shard_models = load_shard_models()
     X_test = load_X_test()
@@ -36,6 +67,8 @@ def main():
     scaler = load_scaler()
     num_shards = 30
     num_slices = 25
+
+
     if "training_rmses" not in st.session_state:
         st.session_state.training_rmses = []
     if "testing_rmses" not in st.session_state:
@@ -212,6 +245,56 @@ def main():
             st.plotly_chart(fig_testing) 
         st.success('Graphing Completed!')
 
+
+def download_assets(download_dir, release_tags, owner, headers, repo):
+    # List of expected file names (change according to the assets in your releases)
+    expected_files = ["shard_models.mdl", "X_test.dat", "X_train.dat", "y_test.dat", "y_train.dat", 
+                      "test_shards.shrds", "train_shards.shrds", "test_slices.sls", "train_slices.sls", "scaler.scl"]
+
+    # Check if files already exist to avoid redundant downloads
+    files_downloaded = all(os.path.exists(f'{download_dir}/{file_name}') for file_name in expected_files)
+
+    if not files_downloaded:
+        for release_tag in release_tags:
+            # GitHub API URL to fetch release assets for each release tag
+            url = f"https://api.github.com/repos/{owner}/{repo}/releases/tags/{release_tag}"
+
+            # Send GET request to GitHub API with authentication
+            response = requests.get(url, headers=headers)
+
+            # Check the response status code
+            if response.status_code == 200:
+                try:
+                    release_data = response.json()
+                    # Download assets if they exist
+                    if "assets" in release_data:
+                        for asset in release_data["assets"]:
+                            asset_name = asset["name"]
+                            asset_url = asset["browser_download_url"]
+                            
+                            # Check if file already exists
+                            if not os.path.exists(f'{download_dir}/{asset_name}'):
+                                # Send GET request to download the asset
+                                file_response = requests.get(asset_url)
+                                
+                                # Check if the file was fetched successfully
+                                if file_response.status_code == 200:
+                                    with open(f'{download_dir}/{asset_name}', "wb") as f:
+                                        f.write(file_response.content)
+                                    print(f"Downloaded: {asset_name}")
+                                else:
+                                    print(f"Failed to download {asset_name}")
+                    else:
+                        print(f"No assets found in release {release_tag}.")
+                except ValueError as e:
+                    print(f"Error decoding JSON: {e}")
+            else:
+                print(f"Failed to fetch release data for {release_tag}: {response.status_code}")
+                print(response.text)
+    else:
+        print("All files are already downloaded.")
+
+
 @st.cache_resource
 def load_shard_models():
     # opening the shard_models
@@ -273,10 +356,17 @@ def load_test_sls():
 
 @st.cache_resource
 def load_train_sls():
-    with open('Data_and_Files/train_slices.sls', 'rb') as fh:
+    with zipfile.ZipFile('Data_and_Files/train_slices.zip', 'r') as zip_ref:
+        zip_ref.extract('train_slices.sls copy', 'extracted_files')  # Extract specific file
+
+    # Construct the path to the extracted file
+    train_slices_path = os.path.join('extracted_files', 'train_slices.sls copy')
+    
+    # Load the train_slices from the unzipped file
+    with open(train_slices_path, 'rb') as fh:
         train_slices = dill.load(fh)
-        fh.close()
-        return train_slices
+        
+    return train_slices
 
 @st.cache_data
 def load_df():
