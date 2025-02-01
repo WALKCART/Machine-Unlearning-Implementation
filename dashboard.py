@@ -278,7 +278,7 @@ def download_assets(download_dir, release_tags, owner, headers, repo):
                             with requests.get(asset_url, headers=headers, stream=True, timeout=60) as file_response:
                                 if file_response.status_code == 200:
                                     file_size = int(file_response.headers.get('content-length', 0))
-                                    chunk_size = 1024 * 1024  # 1 MB
+                                    chunk_size = 1024 * 1024  * 5 # 5 MB
                                     downloaded = 0
                                     progress_bar = st.progress(0)
                                     status_text = st.empty()
