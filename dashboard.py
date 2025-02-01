@@ -249,7 +249,7 @@ def main():
 def download_assets(download_dir, release_tags, owner, headers, repo):
     # List of expected file names (change according to the assets in your releases)
     expected_files = ["shard_models.mdl", "X_test.dat", "X_train.dat", "y_test.dat", "y_train.dat", 
-                      "test_shards.shrds", "train_shards.shrds", "test_slices.sls", "train_slices.sls", "scaler.scl"]
+                      "test_shards.shrds", "train_shards.shrds", "test_slices.sls", "train_slices.zip", "scaler.scl"]
 
     # Check if files already exist to avoid redundant downloads
     files_downloaded = all(os.path.exists(f'{download_dir}/{file_name}') for file_name in expected_files)
