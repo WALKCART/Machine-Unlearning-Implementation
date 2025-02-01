@@ -357,10 +357,10 @@ def load_test_sls():
 @st.cache_resource
 def load_train_sls():
     with zipfile.ZipFile('Data_and_Files/train_slices.zip', 'r') as zip_ref:
-        zip_ref.extract('train_slices.sls copy', 'extracted_files')  # Extract specific file
+        zip_ref.extract('train_slices.sls', 'extracted_files')  # Extract specific file
 
     # Construct the path to the extracted file
-    train_slices_path = os.path.join('extracted_files', 'train_slices.sls copy')
+    train_slices_path = os.path.join('extracted_files', 'train_slices.sls')
     
     # Load the train_slices from the unzipped file
     with open(train_slices_path, 'rb') as fh:
