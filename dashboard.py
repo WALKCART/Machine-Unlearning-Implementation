@@ -308,8 +308,10 @@ def load_shard_models():
     # opening the shard_models
     with open('Data_and_Files/shard_models.mdl', 'rb') as fh:
         shard_models = dill.load(fh)
-        return shard_models
         fh.close()
+        st.write('loaded shard models')
+    return shard_models
+        
 
 # opeining the training and the testing data sets
 @st.cache_resource
@@ -317,28 +319,32 @@ def load_X_test():
     with open('Data_and_Files/X_test.dat', 'rb') as fh:
         X_test = dill.load(fh)
         fh.close()
-        return X_test
+        st.write('loaded X_test')
+    return X_test
     
 @st.cache_resource
 def load_X_train():
     with open('Data_and_Files/X_train.dat', 'rb') as fh:
         X_train = dill.load(fh)
         fh.close()
-        return X_train
+        st.write('loaded X_train')
+    return X_train
 
 @st.cache_resource
 def load_y_test():
     with open('Data_and_Files/y_test.dat', 'rb') as fh:
         y_test = dill.load(fh)
         fh.close()
-        return y_test
+        st.write('loaded y_test')
+    return y_test
 
 @st.cache_resource
 def load_y_train():
     with open('Data_and_Files/y_train.dat', 'rb') as fh:
         y_train = dill.load(fh)  
         fh.close()
-        return y_train
+        st.write('loaded y_train')
+    return y_train
 
 @st.cache_resource
 def load_test_shrds():
@@ -346,21 +352,24 @@ def load_test_shrds():
     with open('Data_and_Files/test_shards.shrds', 'rb') as fh:
         test_shards = dill.load(fh)
         fh.close()
-        return test_shards
+        st.write('loaded test_shards')
+    return test_shards
 
 @st.cache_resource
 def load_train_shrds():
     with open('Data_and_Files/train_shards.shrds', 'rb') as fh:
         train_shards = dill.load(fh)
         fh.close()
-        return train_shards
+        st.write('loaded train_shards')
+    return train_shards
 
 @st.cache_resource
 def load_test_sls():
     with open('Data_and_Files/test_slices.sls', 'rb') as fh:
         test_slices = dill.load(fh)
         fh.close()
-        return test_slices
+        st.write('loaded test_sls')
+    return test_slices
 
 @st.cache_resource
 def load_train_sls():
@@ -373,7 +382,7 @@ def load_train_sls():
     # Load the train_slices from the unzipped file
     with open(train_slices_path, 'rb') as fh:
         train_slices = dill.load(fh)
-        
+    st.write('loaded train_sls')
     return train_slices
 
 @st.cache_data
@@ -397,6 +406,7 @@ def load_df():
     "Lien Status"
     ]
     df2 = df[features_list]
+    st.write('loaded df')
     return df2
 
 @st.cache_resource
@@ -404,6 +414,7 @@ def load_scaler():
     with open('Data_and_Files/scaler.scl', 'rb') as fh:
         scaler = dill.load(fh)
         fh.close()
+    st.write('loaded scaler')
     return scaler
 
 # function finding out the exact location of the recod to be deleted. 
