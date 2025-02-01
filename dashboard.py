@@ -247,53 +247,60 @@ def main():
 
 
 def download_assets(download_dir, release_tags, owner, headers, repo):
-    # List of expected file names (change according to the assets in your releases)
+    # Ensure the download directory exists
+    os.makedirs(download_dir, exist_ok=True)
+
+    # List of expected file names
     expected_files = ["shard_models.mdl", "X_test.dat", "X_train.dat", "y_test.dat", "y_train.dat", 
                       "test_shards.shrds", "train_shards.shrds", "test_slices.sls", "train_slices.zip", "scaler.scl"]
 
-    # Check if files already exist to avoid redundant downloads
-    files_downloaded = all(os.path.exists(f'{download_dir}/{file_name}') for file_name in expected_files)
+    # Check if all files are already downloaded
+    files_downloaded = all(os.path.exists(os.path.join(download_dir, file_name)) for file_name in expected_files)
 
     if not files_downloaded:
         for release_tag in release_tags:
-            # GitHub API URL to fetch release assets for each release tag
             url = f"https://api.github.com/repos/{owner}/{repo}/releases/tags/{release_tag}"
+            response = requests.get(url, headers=headers, timeout=30)
 
-            # Send GET request to GitHub API with authentication
-            response = requests.get(url, headers=headers)
-
-            # Check the response status code
             if response.status_code == 200:
                 try:
                     release_data = response.json()
-                    # Download assets if they exist
                     if "assets" in release_data:
                         for asset in release_data["assets"]:
                             asset_name = asset["name"]
                             asset_url = asset["browser_download_url"]
-                            
-                            # Check if file already exists
-                            if not os.path.exists(f'{download_dir}/{asset_name}'):
-                                # Send GET request to download the asset
-                                file_response = requests.get(asset_url)
-                                
-                                # Check if the file was fetched successfully
-                                if file_response.status_code == 200:
-                                    with open(f'{download_dir}/{asset_name}', "wb") as f:
-                                        f.write(file_response.content)
-                                    print(f"Downloaded: {asset_name}")
-                                else:
-                                    print(f"Failed to download {asset_name}")
-                    else:
-                        print(f"No assets found in release {release_tag}.")
-                except ValueError as e:
-                    print(f"Error decoding JSON: {e}")
-            else:
-                print(f"Failed to fetch release data for {release_tag}: {response.status_code}")
-                print(response.text)
-    else:
-        print("All files are already downloaded.")
+                            asset_path = os.path.join(download_dir, asset_name)
 
+                            # Skip if file exists
+                            if os.path.exists(asset_path):
+                                continue
+
+                            with requests.get(asset_url, headers=headers, stream=True, timeout=60) as file_response:
+                                if file_response.status_code == 200:
+                                    file_size = int(file_response.headers.get('content-length', 0))
+                                    chunk_size = 1024 * 1024  # 1 MB
+                                    downloaded = 0
+
+                                    with open(asset_path, "wb") as f:
+                                        for chunk in file_response.iter_content(chunk_size=chunk_size):
+                                            if chunk:
+                                                f.write(chunk)
+                                                downloaded += len(chunk)
+                                                progress = (downloaded / file_size) * 100
+                                                st.write(f"Downloading {asset_name}: {progress:.2f}%")
+
+                                    st.success(f"Downloaded: {asset_name}")
+                                else:
+                                    st.error(f"Failed to download {asset_name}")
+                    else:
+                        st.warning(f"No assets found in release {release_tag}")
+                except ValueError as e:
+                    st.error(f"Error decoding JSON: {e}")
+            else:
+                st.error(f"Failed to fetch release data for {release_tag}: {response.status_code}")
+                st.text(response.text)
+    else:
+        st.success("All files are already downloaded.")
 
 @st.cache_resource
 def load_shard_models():
