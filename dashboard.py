@@ -30,7 +30,7 @@ def main():
     repo = "Machine-Unlearning-Implementation"
 
     # Release tags
-    release_tags = ["Release_1_Tag", "Release_2_Tag"]  # Replace with your actual release tags
+    release_tags = ['Files', 'training_slices']  # Replace with your actual release tags
 
     # Fetch the token from environment variables
     token = st.secrets["GITHUB_TOKEN"] or os.getenv("GITHUB_TOKEN")
@@ -51,7 +51,7 @@ def main():
     # Create the directory if it doesn't exist
     os.makedirs(download_dir, exist_ok=True)
 
-    download_assets(download_dir, ['Files', 'training_slices'], owner, headers, repo) # download the assets
+    download_assets(download_dir, release_tags, owner, headers, repo) # download the assets
 
     # loading the data from the different files
     shard_models = load_shard_models()
@@ -199,7 +199,7 @@ def main():
     if st.button('Delete Data and Unlearn'):
         with st.spinner('Deleting Data'):
             del_data(record_no, st.session_state.test_or_train, st.session_state.shard_idx_todel, st.session_state.slice_idx_todel, st.session_state.idx_inslice_todel, st.session_state.idx_indf_todel, test_slices, train_slices, df, X_test, X_train, y_test, y_train)
-        st.success(f'Data Deleted successfully at shard index {st.session_state.shard_idx_todel}, slice {st.session_state.slice_idx_todel}, index in slide {st.session_state.idx_inslice_todel} and index in main dataset at {st.session_state.idx_indf_todel}')
+        st.success(f'Data Deleted successfully at shard index {st.session_state.shard_idx_todel}, slice {st.session_state.slice_idx_todel}, index in slice {st.session_state.idx_inslice_todel} and index in main dataset at {st.session_state.idx_indf_todel}')
 
         unlearn(st.session_state.test_or_train, num_slices, st.session_state.shard_idx_todel, st.session_state.slice_idx_todel, train_slices, shard_models, 32, 100)
 
@@ -370,7 +370,7 @@ def load_train_sls():
 
 @st.cache_data
 def load_df():
-    df = pd.read_csv('Data_and_Files/fnma loan data.csv')
+    df = pd.read_csv('Data_and_Files/fnma.loan.data.csv')
     features_list = [
     'Record Number',
     "Borrower’s (or Borrowers’) Annual Income",
