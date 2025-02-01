@@ -280,15 +280,16 @@ def download_assets(download_dir, release_tags, owner, headers, repo):
                                     file_size = int(file_response.headers.get('content-length', 0))
                                     chunk_size = 1024 * 1024  # 1 MB
                                     downloaded = 0
-
+                                    progress_bar = st.progress(0)
+                                    status_text = st.empty()
                                     with open(asset_path, "wb") as f:
                                         for chunk in file_response.iter_content(chunk_size=chunk_size):
                                             if chunk:
                                                 f.write(chunk)
                                                 downloaded += len(chunk)
-                                                progress = (downloaded / file_size) * 100
-                                                st.write(f"Downloading {asset_name}: {progress:.2f}%")
-
+                                                progress = (downloaded / file_size)
+                                                progress_bar.progress(progress)
+                                                status_text.text(f"Downloading {asset_name}: {progress * 100:.2f}%")
                                     st.success(f"Downloaded: {asset_name}")
                                 else:
                                     st.error(f"Failed to download {asset_name}")
