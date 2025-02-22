@@ -3,7 +3,7 @@ pandas
 matplotlib
 seaborn
 torch
-scikit-learn
+scikit-learn==1.5.2
 plotly
 dill
 streamlit
