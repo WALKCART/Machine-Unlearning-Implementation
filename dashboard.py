@@ -30,8 +30,7 @@ def main():
     repo = "Machine-Unlearning-Implementation"
 
     # Release tags
-    release_tags = ['Files', 'training_slices']  # Replace with your actual release tags
-
+    release_tags = 'Files'
     # Fetch the token from environment variables
     token = st.secrets["GITHUB_TOKEN"] or os.getenv("GITHUB_TOKEN")
 
@@ -246,60 +245,64 @@ def main():
         st.success('Graphing Completed!')
 
 
-def download_assets(download_dir, release_tags, owner, headers, repo):
+def download_assets(download_dir, release_tag, owner, headers, repo):
     # Ensure the download directory exists
     os.makedirs(download_dir, exist_ok=True)
 
-    # List of expected file names
-    expected_files = ["shard_models.mdl", "X_test.dat", "X_train.dat", "y_test.dat", "y_train.dat", 
-                      "test_shards.shrds", "train_shards.shrds", "test_slices.sls", "train_slices.zip", "scaler.scl"]
+    # Updated list of expected file names
+    expected_files = [
+        "shard_models.mdl", "X_test.dat", "X_train.dat", "y_test.dat", "y_train.dat",
+        "test_shards_npy.shrds", "train_shards_npy.shrds", 
+        "test_slices_npy.sls", "train_slices_npy.sls", "scaler.scl"
+    ]
 
     # Check if all files are already downloaded
     files_downloaded = all(os.path.exists(os.path.join(download_dir, file_name)) for file_name in expected_files)
 
     if not files_downloaded:
-        for release_tag in release_tags:
-            url = f"https://api.github.com/repos/{owner}/{repo}/releases/tags/{release_tag}"
-            response = requests.get(url, headers=headers, timeout=30)
+        url = f"https://api.github.com/repos/{owner}/{repo}/releases/tags/{release_tag}"
+        response = requests.get(url, headers=headers, timeout=30)
 
-            if response.status_code == 200:
-                try:
-                    release_data = response.json()
-                    if "assets" in release_data:
-                        for asset in release_data["assets"]:
-                            asset_name = asset["name"]
-                            asset_url = asset["browser_download_url"]
-                            asset_path = os.path.join(download_dir, asset_name)
+        if response.status_code == 200:
+            try:
+                release_data = response.json()
+                if "assets" in release_data:
+                    for asset in release_data["assets"]:
+                        asset_name = asset["name"]
+                        asset_url = asset["browser_download_url"]
+                        asset_path = os.path.join(download_dir, asset_name)
 
-                            # Skip if file exists
-                            if os.path.exists(asset_path):
-                                continue
+                        # Skip if file exists
+                        if os.path.exists(asset_path):
+                            continue
 
-                            with requests.get(asset_url, headers=headers, stream=True, timeout=60) as file_response:
-                                if file_response.status_code == 200:
-                                    file_size = int(file_response.headers.get('content-length', 0))
-                                    chunk_size = 1024 * 1024  * 5 # 5 MB
-                                    downloaded = 0
-                                    progress_bar = st.progress(0)
-                                    status_text = st.empty()
-                                    with open(asset_path, "wb") as f:
-                                        for chunk in file_response.iter_content(chunk_size=chunk_size):
-                                            if chunk:
-                                                f.write(chunk)
-                                                downloaded += len(chunk)
-                                                progress = (downloaded / file_size)
-                                                progress_bar.progress(progress)
-                                                status_text.text(f"Downloading {asset_name}: {progress * 100:.2f}%")
-                                    st.success(f"Downloaded: {asset_name}")
-                                else:
-                                    st.error(f"Failed to download {asset_name}")
-                    else:
-                        st.warning(f"No assets found in release {release_tag}")
-                except ValueError as e:
-                    st.error(f"Error decoding JSON: {e}")
-            else:
-                st.error(f"Failed to fetch release data for {release_tag}: {response.status_code}")
-                st.text(response.text)
+                        with requests.get(asset_url, headers=headers, stream=True, timeout=60) as file_response:
+                            if file_response.status_code == 200:
+                                file_size = int(file_response.headers.get('content-length', 0))
+                                chunk_size = 1024 * 1024 * 5  # 5 MB
+                                downloaded = 0
+                                progress_bar = st.progress(0)
+                                status_text = st.empty()
+
+                                with open(asset_path, "wb") as f:
+                                    for chunk in file_response.iter_content(chunk_size=chunk_size):
+                                        if chunk:
+                                            f.write(chunk)
+                                            downloaded += len(chunk)
+                                            progress = downloaded / file_size
+                                            progress_bar.progress(progress)
+                                            status_text.text(f"Downloading {asset_name}: {progress * 100:.2f}%")
+
+                                st.success(f"Downloaded: {asset_name}")
+                            else:
+                                st.error(f"Failed to download {asset_name}")
+                else:
+                    st.warning(f"No assets found in release {release_tag}")
+            except ValueError as e:
+                st.error(f"Error decoding JSON: {e}")
+        else:
+            st.error(f"Failed to fetch release data for {release_tag}: {response.status_code}")
+            st.text(response.text)
     else:
         st.success("All files are already downloaded.")
 
@@ -344,35 +347,28 @@ def load_y_train():
 @st.cache_resource
 def load_test_shrds():
     # opening the shards and slices
-    with open('Data_and_Files/test_shards.shrds', 'rb') as fh:
+    with open('Data_and_Files/test_shards_npy.shrds', 'rb') as fh:
         test_shards = dill.load(fh)
         fh.close()
     return test_shards
 
 @st.cache_resource
 def load_train_shrds():
-    with open('Data_and_Files/train_shards.shrds', 'rb') as fh:
+    with open('Data_and_Files/train_shards_npy.shrds', 'rb') as fh:
         train_shards = dill.load(fh)
         fh.close()
     return train_shards
 
 @st.cache_resource
 def load_test_sls():
-    with open('Data_and_Files/test_slices.sls', 'rb') as fh:
+    with open('Data_and_Files/test_slices_npy.sls', 'rb') as fh:
         test_slices = dill.load(fh)
         fh.close()
     return test_slices
 
 @st.cache_resource
 def load_train_sls():
-    with zipfile.ZipFile('Data_and_Files/train_slices.zip', 'r') as zip_ref:
-        zip_ref.extract('train_slices.sls copy', 'extracted_files')  # Extract specific file
-
-    # Construct the path to the extracted file
-    train_slices_path = os.path.join('extracted_files', 'train_slices.sls copy')
-    
-    # Load the train_slices from the unzipped file
-    with open(train_slices_path, 'rb') as fh:
+    with open('Data_and_Files/train_slices_npy.sls', 'rb') as fh:
         train_slices = dill.load(fh)
     return train_slices
 
@@ -417,7 +413,7 @@ def find_shard_slice(to_delete: int, df: pd.DataFrame, scaler: StandardScaler, n
     for shard_idx in range(num_shards):
         for slice_idx in range(num_slices):
             for idx in range(len(training_slices[shard_idx][slice_idx].x_slice)):
-                if torch.allclose(to_delete, training_slices[shard_idx][slice_idx].x_slice[idx]):
+                if torch.allclose(to_delete, torch.tensor(training_slices[shard_idx][slice_idx].x_slice[idx])):
                    for train_idx in range(len(X_train)):
                        if torch.allclose(to_delete, X_train[train_idx]):
                            return (0, shard_idx, slice_idx, idx, train_idx) # 0 is for training dataset
@@ -426,7 +422,7 @@ def find_shard_slice(to_delete: int, df: pd.DataFrame, scaler: StandardScaler, n
     for shard_idx in range(num_shards):
         for slice_idx in range(num_slices):
             for idx in range(len(testing_slices[shard_idx][slice_idx].x_slice)):
-                if torch.allclose(to_delete, testing_slices[shard_idx][slice_idx].x_slice[idx]):
+                if torch.allclose(to_delete, torch.tensor(testing_slices[shard_idx][slice_idx].x_slice[idx])):
                    st.write('Record was found in the Testing Dataset')
                    for test_idx, test_pt in enumerate(X_test):
                        if torch.allclose(to_delete, test_pt):
@@ -437,8 +433,8 @@ def del_data(record_no: int, test_or_train: int, shard_idx: int, slice_idx: int,
     '''Takes the shard index, slice index and the index of the data point and deletes it from either the training or the testing data'''
     df.drop(df[df['Record Number'] == record_no].index, inplace=True)  # deleting it from the dataframe
     if test_or_train == 0:
-        new_x_slice = torch.cat((train_slices[shard_idx][slice_idx].x_slice[:idx], train_slices[shard_idx][slice_idx].x_slice[idx+1:]))
-        new_y_slice = torch.cat((train_slices[shard_idx][slice_idx].y_slice[:idx], train_slices[shard_idx][slice_idx].y_slice[idx+1:]))
+        new_x_slice = np.concatenate((train_slices[shard_idx][slice_idx].x_slice[:idx], train_slices[shard_idx][slice_idx].x_slice[idx+1:]))
+        new_y_slice = np.concatenate((train_slices[shard_idx][slice_idx].y_slice[:idx], train_slices[shard_idx][slice_idx].y_slice[idx+1:]))
         train_slices[shard_idx][slice_idx].x_slice = new_x_slice
         train_slices[shard_idx][slice_idx].y_slice = new_y_slice
         X_train = torch.cat([X_train[:train_test_idx], X_train[train_test_idx + 1:]])
@@ -446,8 +442,8 @@ def del_data(record_no: int, test_or_train: int, shard_idx: int, slice_idx: int,
         st.write(f"Data of training shard {shard_idx} in slice {slice_idx} at index of {idx}; Data in main dataset at index {train_test_idx} deleted successfully")
 
     elif test_or_train == 1:
-        new_x_slice = torch.cat((test_slices[shard_idx][slice_idx].x_slice[:idx], test_slices[shard_idx][slice_idx].x_slice[idx+1:]))
-        new_y_slice = torch.cat((test_slices[shard_idx][slice_idx].y_slice[:idx], test_slices[shard_idx][slice_idx].y_slice[idx+1:]))
+        new_x_slice = (torch.cat((torch.tensor(test_slices[shard_idx][slice_idx].x_slice[:idx]), torch.tensor(test_slices[shard_idx][slice_idx].x_slice[idx+1:])))).numpy()
+        new_y_slice = (torch.cat((torch.tensor(test_slices[shard_idx][slice_idx].y_slice[:idx]), torch.tensor(test_slices[shard_idx][slice_idx].y_slice[idx+1:])))).numpy()
         test_slices[shard_idx][slice_idx].x_slice = new_x_slice
         test_slices[shard_idx][slice_idx].y_slice = new_y_slice
         X_test = torch.cat([X_test[:train_test_idx], X_test[train_test_idx + 1:]])
@@ -470,11 +466,11 @@ def unlearn(test_or_train: int, num_slices: int, shard_idx_todel: int, slice_idx
             unl_model_params = []
             for slice_idx in range(num_slices):
                 if slice_idx == 0:
-                    x = train_slices[shard_idx_todel][0].x_slice
-                    y = train_slices[shard_idx_todel][0].y_slice
+                    x = torch.tensor(train_slices[shard_idx_todel][0].x_slice)
+                    y = torch.tensor(train_slices[shard_idx_todel][0].y_slice)
                 else:
-                    x = torch.cat((x, train_slices[shard_idx_todel][slice_idx].x_slice))
-                    y = torch.cat((y, train_slices[shard_idx_todel][slice_idx].y_slice))
+                    x = torch.cat((x, torch.tensor(train_slices[shard_idx_todel][slice_idx].x_slice)))
+                    y = torch.cat((y, torch.tensor(train_slices[shard_idx_todel][slice_idx].y_slice)))
                 train_dataset = torch.utils.data.TensorDataset(x, y)
                 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
@@ -502,11 +498,11 @@ def unlearn(test_or_train: int, num_slices: int, shard_idx_todel: int, slice_idx
 
             for slice_idx in range(slice_idx_todel, num_slices):
                 if slice_idx == slice_idx_todel:
-                    x = train_slices[shard_idx_todel][slice_idx].x_slice[:slice_idx + 1]
-                    y = train_slices[shard_idx_todel][slice_idx].y_slice[:slice_idx + 1]
+                    x = torch.tensor(train_slices[shard_idx_todel][slice_idx].x_slice[:slice_idx + 1])
+                    y = torch.tensor(train_slices[shard_idx_todel][slice_idx].y_slice[:slice_idx + 1])
                 else:
-                    x = torch.cat([x, train_slices[shard_idx_todel][slice_idx].x_slice])
-                    y = torch.cat([y, train_slices[shard_idx_todel][slice_idx].y_slice])
+                    x = torch.cat([x, torch.tensor(train_slices[shard_idx_todel][slice_idx].x_slice)])
+                    y = torch.cat([y, torch.tensor(train_slices[shard_idx_todel][slice_idx].y_slice)])
                 train_dataset = torch.utils.data.TensorDataset(x, y)
                 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
