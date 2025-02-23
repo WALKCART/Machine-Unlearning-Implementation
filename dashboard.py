@@ -453,24 +453,6 @@ def del_data(record_no: int, test_or_train: int, shard_idx: int, slice_idx: int,
 
 # function to unlearn the data point
 def unlearn(test_or_train: int, num_slices: int, shard_idx_todel: int, slice_idx_todel: int, train_slices, shard_models, BATCH_SIZE: int, num_epochs: int):
-    class BaselineModel(nn.Module):
-        def __init__(self):
-            super(BaselineModel, self).__init__()
-            self.fc1 = nn.Linear(15, 512)
-            self.fc2 = nn.Linear(512, 512)
-            self.fc3 = nn.Linear(512, 64)
-            self.fc4 = nn.Linear(64, 1)
-            self.relu = nn.ReLU()
-            self.dropout = nn.Dropout(0.3)
-
-        def forward(self, x):
-            x = self.relu(self.fc1(x))
-            x = self.dropout(x)
-            x = self.relu(self.fc2(x))
-            x = self.dropout(x)
-            x = self.relu(self.fc3(x))
-            x = self.fc4(x)
-            return x
     if test_or_train == 0:
         model = shard_models[shard_idx_todel].model
         criterion = nn.MSELoss()
