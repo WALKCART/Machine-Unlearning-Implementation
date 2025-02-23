@@ -16,7 +16,7 @@ import zipfile
 import requests
 import streamlit as st
 
-
+torch.classes.__path__ = []
 def main():
     # Page configuration
     st.set_page_config(
