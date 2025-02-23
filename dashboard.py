@@ -24,25 +24,6 @@ def main():
         layout="centered",
         initial_sidebar_state="collapsed",
     )
-    class BaselineModel(nn.Module):
-        def __init__(self):
-            super(BaselineModel, self).__init__()
-            self.fc1 = nn.Linear(15, 512)
-            self.fc2 = nn.Linear(512, 512)
-            self.fc3 = nn.Linear(512, 64)
-            self.fc4 = nn.Linear(64, 1)
-            self.relu = nn.ReLU()
-            self.dropout = nn.Dropout(0.3)
-
-        def forward(self, x):
-            x = self.relu(self.fc1(x))
-            x = self.dropout(x)
-            x = self.relu(self.fc2(x))
-            x = self.dropout(x)
-            x = self.relu(self.fc3(x))
-            x = self.fc4(x)
-            return x
-
 
     # Github repo details
     owner = "WALKCART"
@@ -461,8 +442,8 @@ def del_data(record_no: int, test_or_train: int, shard_idx: int, slice_idx: int,
         st.write(f"Data of training shard {shard_idx} in slice {slice_idx} at index of {idx}; Data in main dataset at index {train_test_idx} deleted successfully")
 
     elif test_or_train == 1:
-        new_x_slice = (torch.cat((torch.tensor(test_slices[shard_idx][slice_idx].x_slice[:idx]), torch.tensor(test_slices[shard_idx][slice_idx].x_slice[idx+1:])))).numpy()
-        new_y_slice = (torch.cat((torch.tensor(test_slices[shard_idx][slice_idx].y_slice[:idx]), torch.tensor(test_slices[shard_idx][slice_idx].y_slice[idx+1:])))).numpy()
+        new_x_slice = np.concatenate((test_slices[shard_idx][slice_idx].x_slice[:idx], test_slices[shard_idx][slice_idx].x_slice[idx+1:]))
+        new_y_slice = np.concatenate((test_slices[shard_idx][slice_idx].y_slice[:idx], test_slices[shard_idx][slice_idx].y_slice[idx+1:]))
         test_slices[shard_idx][slice_idx].x_slice = new_x_slice
         test_slices[shard_idx][slice_idx].y_slice = new_y_slice
         X_test = torch.cat([X_test[:train_test_idx], X_test[train_test_idx + 1:]])
@@ -472,6 +453,24 @@ def del_data(record_no: int, test_or_train: int, shard_idx: int, slice_idx: int,
 
 # function to unlearn the data point
 def unlearn(test_or_train: int, num_slices: int, shard_idx_todel: int, slice_idx_todel: int, train_slices, shard_models, BATCH_SIZE: int, num_epochs: int):
+    class BaselineModel(nn.Module):
+        def __init__(self):
+            super(BaselineModel, self).__init__()
+            self.fc1 = nn.Linear(15, 512)
+            self.fc2 = nn.Linear(512, 512)
+            self.fc3 = nn.Linear(512, 64)
+            self.fc4 = nn.Linear(64, 1)
+            self.relu = nn.ReLU()
+            self.dropout = nn.Dropout(0.3)
+
+        def forward(self, x):
+            x = self.relu(self.fc1(x))
+            x = self.dropout(x)
+            x = self.relu(self.fc2(x))
+            x = self.dropout(x)
+            x = self.relu(self.fc3(x))
+            x = self.fc4(x)
+            return x
     if test_or_train == 0:
         model = shard_models[shard_idx_todel].model
         criterion = nn.MSELoss()
